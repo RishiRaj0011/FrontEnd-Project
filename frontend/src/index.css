@@ -1,0 +1,118 @@
+/* index.css — global resets & ReactFlow dark-theme overrides */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  background: #0F0F0F;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #F1F5F9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* ── Scrollbars ─────────────────────────────────────────────── */
+::-webkit-scrollbar              { width: 6px; height: 6px; }
+::-webkit-scrollbar-track        { background: #111118; }
+::-webkit-scrollbar-thumb        { background: #2A2A40; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover  { background: #3D3D5C; }
+
+/* ── Focus: replace blue outline with subtle glow ───────────── */
+*:focus { outline: none; }
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5);
+}
+
+/* ── ReactFlow canvas overrides ─────────────────────────────── */
+.react-flow__renderer         { background: #0F0F0F; }
+.react-flow__background       { background: #0F0F0F; }
+
+/* Selection box */
+.react-flow__selection {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid #6366F1;
+}
+
+/* ── ReactFlow Controls (bottom-left buttons) ───────────────── */
+.react-flow__controls {
+  background: #111118;
+  border: 1px solid #2A2A40;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.react-flow__controls-button {
+  background: #111118;
+  border: none;
+  border-bottom: 1px solid #2A2A40;
+  color: #94A3B8;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.react-flow__controls-button:last-child { border-bottom: none; }
+.react-flow__controls-button:hover      { background: #1A1A2E; color: #F1F5F9; }
+.react-flow__controls-button svg        { fill: currentColor; }
+
+/* ── ReactFlow MiniMap ──────────────────────────────────────── */
+.react-flow__minimap {
+  background: #111118 !important;
+  border: 1px solid #2A2A40;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.react-flow__minimap-mask { fill: rgba(15,15,15,0.7); }
+.react-flow__minimap-node { fill: #2A2A40; }
+
+/* ── ReactFlow edge labels / attribution ────────────────────── */
+.react-flow__attribution { display: none; }
+
+/* ── Animated edge (moving dots) ────────────────────────────── */
+.react-flow__edge-path {
+  stroke: #6366F1;
+  stroke-width: 2;
+}
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge:hover    .react-flow__edge-path {
+  stroke: #818CF8;
+  filter: drop-shadow(0 0 4px rgba(99,102,241,0.6));
+}
+
+/* ── Node selected ring (ReactFlow adds .selected class) ─────── */
+.react-flow__node.selected > div {
+  box-shadow: 0 0 0 2px #6366F1, 0 0 20px rgba(99,102,241,0.3) !important;
+}
+
+/* ── Handle base (overridden per-node via inline style) ──────── */
+.react-flow__handle {
+  width:  12px !important;
+  height: 12px !important;
+  border: 2px solid #fff !important;
+  border-radius: 50% !important;
+  transition: transform 0.15s, box-shadow 0.15s;
+  cursor: crosshair;
+}
+.react-flow__handle:hover {
+  transform: scale(1.35);
+}
+
+/* ── Handle connection validation feedback ───────────────────── */
+.react-flow__handle-connecting {
+  background: #EF4444 !important;
+}
+.react-flow__handle-valid {
+  background: #10B981 !important;
+}
