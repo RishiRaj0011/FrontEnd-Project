@@ -1,70 +1,92 @@
-# Getting Started with Create React App
+# VectorShift Pipeline Builder — Technical Assessment
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A visual, no-code pipeline builder built with React Flow, Zustand, FastAPI, and NetworkX.  
+Drag nodes onto the canvas, connect them, and click **Analyze Pipeline** to validate the graph.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## Quick Start
 
-### `npm start`
+**Backend** (Terminal 1)
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+**Frontend** (Terminal 2)
+```bash
+cd frontend
+npm install
+npm start
+# Opens at http://localhost:3000
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## Architecture Decisions
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 1. BaseNode Composition Pattern
+Every node is built on a single `BaseNode` component that owns the dark-theme shell (header, border-left accent, hover glow, ErrorBoundary). Individual nodes pass a `handles[]` array and a `children` body — a new node takes ~15 lines. This eliminates all UI duplication and guarantees visual consistency across all 9 node types.
 
-### `npm run build`
+### 2. Zustand for State
+Zustand was chosen over Redux for its minimal boilerplate. The store holds `nodes`, `edges`, and a `past/future` stack for undo/redo (Ctrl+Z / Ctrl+Y). All mutations use immutable spread — no direct state mutation.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 3. Dynamic TextNode
+The Text node parses `{{variable}}` tokens in real time using `/\{\{(\w+)\}\}/g`. Each unique, valid variable name gets its own React Flow `target` Handle on the left side. The node auto-resizes (width 200–500px, height grows with line count). Variables are highlighted inline with a colour overlay so users can see them at a glance without editing.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 4. Connection Validation (Two Layers)
+- **`isValidConnection`** on the ReactFlow component blocks self-loops and duplicate edges at drag time.
+- **`onConnect`** in the store removes any existing edge on the same `target + targetHandle` before adding the new one — enforcing the "one input per handle" rule.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 5. FastAPI + NetworkX DAG Check
+The backend accepts `{ nodes, edges }` as JSON, builds a `networkx.DiGraph`, and calls `nx.is_directed_acyclic_graph()` — a standard DFS-based algorithm. CORS is configured for `localhost:3000/3001`. Malformed payloads return a `400` with a descriptive message.
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Features
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+| Feature | Detail |
+|---|---|
+| 9 node types | Input, Output, LLM, Text, Math, API, Filter, Transform, Display |
+| Dynamic handles | Text node creates/removes handles as you type `{{var}}` |
+| Variable highlighting | `{{tokens}}` rendered in accent colour with background pill |
+| Auto-resize | Text node grows width (200–500px) and height with content |
+| Connection rules | No self-loops, no duplicates, one input per handle |
+| Undo / Redo | Ctrl+Z / Ctrl+Y, 30-step history |
+| Lead Enricher template | One-click starter pipeline in the sidebar |
+| DAG analysis modal | Shows node count, edge count, is_dag with green/red feedback |
+| Confetti | Fires on `is_dag: true` result |
+| Cycle warning | Pulsing red ring + explanation on `is_dag: false` |
+| Dark theme | Single `theme.js` token file — every colour, radius, font in one place |
+| Keyboard accessible | All toolbar cards support Tab + Enter/Space |
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Project Structure
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```
+frontend_technical_assessment/
+├── backend/
+│   ├── main.py            # FastAPI app — CORS, /pipelines/parse, DAG check
+│   └── requirements.txt
+└── frontend/
+    └── src/
+        ├── nodes/
+        │   ├── BaseNode.js        # Shared node shell (composition pattern)
+        │   ├── textNode.js        # Dynamic variable handles + auto-resize
+        │   ├── inputNode.js
+        │   ├── outputNode.js
+        │   ├── llmNode.js
+        │   ├── mathNode.js
+        │   ├── apiNode.js
+        │   ├── filterNode.js
+        │   ├── transformNode.js
+        │   └── outputDisplayNode.js
+        ├── store.js       # Zustand store — nodes, edges, undo/redo
+        ├── ui.js          # ReactFlow canvas + connection validation
+        ├── toolbar.js     # Sidebar — node palette + Lead Enricher template
+        ├── submit.js      # Analyze button + result modal + confetti
+        ├── theme.js       # Design tokens (single source of truth)
+        └── index.css      # ReactFlow dark-theme overrides + handle CSS
+```
