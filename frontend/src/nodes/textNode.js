@@ -8,8 +8,6 @@ const { color: accentColor, icon } = nodeAccent.text;
 
 // ── Helpers ───────────────────────────────────────────────────
 
-// Extract unique, valid {{variable}} names from text.
-// Rules: \w+ match, no leading digit, deduplicated.
 const parseVariables = (text) => {
   const seen = new Set();
   const re   = /\{\{(\w+)\}\}/g;
@@ -21,9 +19,8 @@ const parseVariables = (text) => {
   return [...seen];
 };
 
-// Grow width with longest line (200–500px), height with line count (min 80px).
 const calcSize = (text) => {
-  const lines = text.split('\n');
+  const lines   = text.split('\n');
   const longest = Math.max(...lines.map(l => l.length), 0);
   return {
     width:  Math.max(200, Math.min(500, longest * 8 + 60)),
@@ -31,7 +28,7 @@ const calcSize = (text) => {
   };
 };
 
-// Render text with {{var}} tokens highlighted in accent yellow.
+// Highlight {{var}} tokens in accent colour inside the preview.
 const HighlightedText = ({ text, color }) => {
   const parts = text.split(/(\{\{\w+\}\})/g);
   return (
@@ -64,9 +61,8 @@ export const TextNode = ({ id, data }) => {
     flexShrink:   0,
   };
 
-  // Dynamic variable handles rendered OUTSIDE BaseNode so we can position
-  // them absolutely relative to the node wrapper. BaseNode exposes its
-  // outer div via overflow:visible, so handles placed here still connect.
+  // Variable handles: positioned inside BaseNode's container (which has position:relative).
+  // Label pill sits to the LEFT of the handle via flex row-reverse, never on the border.
   const varHandles = variables.map((varName, i) => {
     const topPct = variables.length === 1
       ? 50
@@ -74,103 +70,108 @@ export const TextNode = ({ id, data }) => {
     const label = varName.length > 15 ? varName.slice(0, 15) + '…' : varName;
 
     return (
-      // Wrapper sits at the left edge; label floats to the LEFT of the node
-      // with a pill background so it never overlaps the border.
       <div
         key={varName}
         style={{
-          position:  'absolute',
-          left:      0,
-          top:       `${topPct}%`,
-          transform: 'translate(-100%, -50%)',
-          display:   'flex',
-          alignItems:'center',
-          gap:       '4px',
-          pointerEvents: 'none',   // label itself is non-interactive
+          position:      'absolute',
+          left:          '-8px',
+          top:           `${topPct}%`,
+          transform:     'translateY(-50%)',
+          display:       'flex',
+          alignItems:    'center',
+          flexDirection: 'row-reverse',
+          gap:           '4px',
+          pointerEvents: 'none',
+          zIndex:        10,
         }}
       >
-        {/* Label pill — sits to the left, never overlaps node border */}
         <span style={{
-          fontSize:     '9px',
-          color:        accentColor,
-          background:   `${accentColor}22`,
-          border:       `1px solid ${accentColor}44`,
-          borderRadius: '3px',
-          padding:      '1px 4px',
-          whiteSpace:   'nowrap',
-          pointerEvents:'none',
+          fontSize:      '9px',
+          color:         accentColor,
+          background:    `${accentColor}22`,
+          border:        `1px solid ${accentColor}44`,
+          borderRadius:  '3px',
+          padding:       '1px 4px',
+          whiteSpace:    'nowrap',
+          pointerEvents: 'none',
+          marginRight:   '2px',
         }}>
           {label}
         </span>
-
-        {/* The actual React Flow handle — pointer-events re-enabled */}
         <Handle
           type="target"
           position={Position.Left}
           id={varName}
-          style={{ ...handleStyle, position: 'relative', transform: 'none', left: 'auto', top: 'auto', pointerEvents: 'all' }}
+          style={{
+            ...handleStyle,
+            position:      'relative',
+            transform:     'none',
+            left:          'auto',
+            top:           'auto',
+            pointerEvents: 'all',
+          }}
         />
       </div>
     );
   });
 
   return (
-    // Outer wrapper carries the dynamic width and positions variable handles
-    <div style={{ position: 'relative', width: nodeSize.width }}>
-      {varHandles}
+    // BaseNode IS the root — no extra wrapper div.
+    // style prop overrides minWidth so the node grows dynamically.
+    // extraHandles renders variable handles inside BaseNode's container,
+    // so hover glow (onMouseEnter on BaseNode's div) works correctly.
+    <BaseNode
+      title="Text"
+      icon={icon}
+      accentColor={accentColor}
+      style={{ width: nodeSize.width, minWidth: nodeSize.width }}
+      handles={[
+        { type: 'source', position: Position.Right, id: `${id}-output`, label: 'output' },
+      ]}
+      extraHandles={varHandles}
+    >
+      {/* Preview — click to edit */}
+      {!focused && (
+        <div
+          onClick={() => setFocused(true)}
+          style={{
+            background:   T.bgInput,
+            border:       `1px solid ${T.border}`,
+            borderRadius: T.radiusSm,
+            padding:      '4px 8px',
+            minHeight:    Math.max(40, nodeSize.height - 60),
+            cursor:       'text',
+            lineHeight:   1.5,
+          }}
+        >
+          <HighlightedText text={text} color={accentColor} />
+        </div>
+      )}
 
-      <BaseNode
-        title="Text"
-        icon={icon}
-        accentColor={accentColor}
-        handles={[
-          // Only the static output handle goes through BaseNode
-          { type: 'source', position: Position.Right, id: `${id}-output`, label: 'output' },
-        ]}
-      >
-        {/* Preview overlay — shown when textarea is NOT focused */}
-        {!focused && (
-          <div
-            onClick={() => setFocused(true)}
-            style={{
-              background:   T.bgInput,
-              border:       `1px solid ${T.border}`,
-              borderRadius: T.radiusSm,
-              padding:      '4px 8px',
-              minHeight:    Math.max(40, nodeSize.height - 60),
-              cursor:       'text',
-              lineHeight:   1.5,
-            }}
-          >
-            <HighlightedText text={text} color={accentColor} />
-          </div>
-        )}
-
-        {/* Textarea — shown when focused */}
-        {focused && (
-          <textarea
-            autoFocus
-            value={text}
-            onChange={e => setText(e.target.value)}
-            onBlur={() => setFocused(false)}
-            placeholder="{{variable}}"
-            style={{
-              background:   T.bgInput,
-              border:       `1px solid ${accentColor}88`,
-              borderRadius: T.radiusSm,
-              color:        T.textPrimary,
-              fontSize:     '12px',
-              padding:      '4px 8px',
-              width:        '100%',
-              height:       Math.max(40, nodeSize.height - 60),
-              outline:      'none',
-              fontFamily:   T.font,
-              resize:       'none',
-              boxSizing:    'border-box',
-            }}
-          />
-        )}
-      </BaseNode>
-    </div>
+      {/* Textarea — active while focused */}
+      {focused && (
+        <textarea
+          autoFocus
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onBlur={() => setFocused(false)}
+          placeholder="{{variable}}"
+          style={{
+            background:   T.bgInput,
+            border:       `1px solid ${accentColor}88`,
+            borderRadius: T.radiusSm,
+            color:        T.textPrimary,
+            fontSize:     '12px',
+            padding:      '4px 8px',
+            width:        '100%',
+            height:       Math.max(40, nodeSize.height - 60),
+            outline:      'none',
+            fontFamily:   T.font,
+            resize:       'none',
+            boxSizing:    'border-box',
+          }}
+        />
+      )}
+    </BaseNode>
   );
 };

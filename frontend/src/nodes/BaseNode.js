@@ -5,7 +5,7 @@ import { Handle, Position } from 'reactflow';
 import { T } from '../theme';
 import { ErrorBoundary } from './ErrorBoundary';
 
-export const BaseNode = ({ title, icon = '⚙️', accentColor = T.blue, handles = [], children }) => {
+export const BaseNode = ({ title, icon = '⚙️', accentColor = T.blue, handles = [], children, style: styleProp, extraHandles }) => {
   const [hovered, setHovered] = useState(false);
 
   const glowColor = `${accentColor}55`;
@@ -23,6 +23,8 @@ export const BaseNode = ({ title, icon = '⚙️', accentColor = T.blue, handles
     position:   'relative',
     transition: 'box-shadow 0.2s, border-color 0.2s',
     overflow:   'visible',
+    // Allow callers (e.g. TextNode) to override width for dynamic sizing
+    ...styleProp,
   };
 
   const headerStyle = {
@@ -112,6 +114,9 @@ export const BaseNode = ({ title, icon = '⚙️', accentColor = T.blue, handles
           style={{ ...handleBaseStyle(accentColor), ...hs }}
         />
       ))}
+
+      {/* Extra handles injected by the consumer (e.g. dynamic var handles in TextNode) */}
+      {extraHandles}
     </div>
   );
 };
@@ -127,5 +132,7 @@ BaseNode.propTypes = {
     label:    PropTypes.string,
     style:    PropTypes.object,
   })).isRequired,
-  children: PropTypes.node,
+  children:     PropTypes.node,
+  style:        PropTypes.object,   // width override for dynamic nodes (e.g. TextNode)
+  extraHandles: PropTypes.node,     // additional handles rendered inside the container
 };
