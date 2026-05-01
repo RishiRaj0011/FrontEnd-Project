@@ -29,13 +29,12 @@ const SECTIONS = [
   },
 ];
 
-// Pre-built pipeline template: Input → Text → LLM → Output
-// Demonstrates "product ownership" — a real automation starter flow.
+// Pre-built pipeline: Input → Text → LLM → Output in a clean horizontal line.
 const LEAD_ENRICHER_TEMPLATE = [
-  { type: 'customInput',  x: 60,  y: 80  },
-  { type: 'text',         x: 280, y: 80  },
-  { type: 'llm',          x: 500, y: 80  },
-  { type: 'customOutput', x: 720, y: 80  },
+  { type: 'customInput',  x: 100, y: 200 },
+  { type: 'text',         x: 350, y: 200 },
+  { type: 'llm',          x: 600, y: 200 },
+  { type: 'customOutput', x: 850, y: 200 },
 ];
 
 // ── Single draggable node card ────────────────────────────────

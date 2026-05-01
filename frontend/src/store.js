@@ -79,6 +79,36 @@ export const useStore = create((set, get) => ({
     });
   },
 
+  // ── Delete helpers ──────────────────────────────────────────
+  // Delete a single node by id + all its connected edges
+  deleteNode: (nodeId) => {
+    get()._snapshot();
+    set({
+      nodes: get().nodes.filter(n => n.id !== nodeId),
+      edges: get().edges.filter(e => e.source !== nodeId && e.target !== nodeId),
+    });
+  },
+
+  // Delete a single edge by id
+  deleteEdge: (edgeId) => {
+    get()._snapshot();
+    set({ edges: get().edges.filter(e => e.id !== edgeId) });
+  },
+
+  // Delete all currently-selected nodes + edges (used by Delete/Backspace key)
+  deleteSelected: () => {
+    const { nodes, edges } = get();
+    const selectedNodeIds = new Set(nodes.filter(n => n.selected).map(n => n.id));
+    if (!selectedNodeIds.size && !edges.some(e => e.selected)) return;
+    get()._snapshot();
+    set({
+      nodes: nodes.filter(n => !n.selected),
+      edges: edges.filter(
+        e => !e.selected && !selectedNodeIds.has(e.source) && !selectedNodeIds.has(e.target)
+      ),
+    });
+  },
+
   // ── Immutable field update (fixes direct-mutation bug) ───────
   updateNodeField: (nodeId, fieldName, fieldValue) => {
     set({
