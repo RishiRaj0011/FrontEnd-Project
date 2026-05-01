@@ -1,26 +1,20 @@
-# VectorShift Pipeline Builder — Technical Assessment
+# Frontend — VectorShift Pipeline Builder
 
-A visual, no-code pipeline builder built with React Flow, Zustand, FastAPI, and NetworkX.  
-Drag nodes onto the canvas, connect them, and click **Analyze Pipeline** to validate the graph.
+React app for the VectorShift technical assessment.  
+See the root `README.md` for full project overview and architecture decisions.
 
 ---
 
-## Quick Start
+## Setup
 
-**Backend** (Terminal 1)
 ```bash
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-
-**Frontend** (Terminal 2)
-```bash
-cd frontend
 npm install
-npm start
-# Opens at http://localhost:3000
+npm start        # dev server → http://localhost:3000
+npm run build    # production build
 ```
+
+> Backend must be running on port 8000 for **Analyze Pipeline** to work.  
+> See `../backend/` for setup instructions.
 
 ---
 
