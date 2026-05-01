@@ -81,6 +81,8 @@ export const PipelineUI = () => {
   const onNodesChange = useStore((state) => state.onNodesChange);
   const onEdgesChange = useStore((state) => state.onEdgesChange);
   const onConnect     = useStore((state) => state.onConnect);
+  const undo          = useStore((state) => state.undo);
+  const redo          = useStore((state) => state.redo);
 
   const onDrop = useCallback((event) => {
     event.preventDefault();
@@ -123,6 +125,16 @@ export const PipelineUI = () => {
     window.addEventListener('toolbar:addNode', handler);
     return () => window.removeEventListener('toolbar:addNode', handler);
   }, [reactFlowInstance, getNodeID, addNode]);
+
+  // Ctrl+Z / Ctrl+Y undo-redo
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo, redo]);
 
   return (
     <div

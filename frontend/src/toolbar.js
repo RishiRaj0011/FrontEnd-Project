@@ -29,6 +29,15 @@ const SECTIONS = [
   },
 ];
 
+// Pre-built pipeline template: Input → Text → LLM → Output
+// Demonstrates "product ownership" — a real automation starter flow.
+const LEAD_ENRICHER_TEMPLATE = [
+  { type: 'customInput',  x: 60,  y: 80  },
+  { type: 'text',         x: 280, y: 80  },
+  { type: 'llm',          x: 500, y: 80  },
+  { type: 'customOutput', x: 720, y: 80  },
+];
+
 // ── Single draggable node card ────────────────────────────────
 const NodeCard = ({ type, label }) => {
   const [hovered, setHovered] = useState(false);
@@ -46,8 +55,6 @@ const NodeCard = ({ type, label }) => {
     }
   };
 
-  // hovered is true for both mouse-hover and keyboard-focus (via onFocus/onBlur),
-  // so one style object covers all interactive states — no separate focusStyle needed.
   const cardStyle = {
     display:      'flex',
     alignItems:   'center',
@@ -96,40 +103,85 @@ const NodeCard = ({ type, label }) => {
   );
 };
 
-// ── Sidebar ───────────────────────────────────────────────────
-export const PipelineToolbar = () => (
-  <nav
-    aria-label="Node palette"
-    style={{
-      width:         '200px',
-      minWidth:      '200px',
-      height:        '100%',
-      background:    T.bgSidebar,
-      borderRight:   `1px solid ${T.border}`,
-      display:       'flex',
-      flexDirection: 'column',
-      overflowY:     'auto',
-      fontFamily:    T.font,
-      flexShrink:    0,
-    }}
-  >
-    {/* Branding */}
-    <div style={{
-      padding:      '16px 14px 12px',
-      borderBottom: `1px solid ${T.border}`,
-      display:      'flex',
-      alignItems:   'center',
-      gap:          '8px',
-    }}>
-      <span aria-hidden="true" style={{ fontSize: '18px' }}>🔗</span>
-      <span style={{ fontSize: '13px', fontWeight: 700, color: T.textPrimary, letterSpacing: '0.04em' }}>
-        Pipeline Builder
+// ── Template button ───────────────────────────────────────────
+const TemplateButton = ({ label, description, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display:       'flex',
+        flexDirection: 'column',
+        alignItems:    'flex-start',
+        gap:           '2px',
+        width:         '100%',
+        padding:       '8px 10px',
+        borderRadius:  T.radiusSm,
+        border:        `1px solid ${hovered ? T.purple + '66' : T.border}`,
+        borderLeft:    `3px solid ${T.purple}`,
+        background:    hovered ? T.bgHover : 'transparent',
+        cursor:        'pointer',
+        textAlign:     'left',
+        transition:    'background 0.15s, border-color 0.15s',
+        boxShadow:     hovered ? `0 0 0 2px ${T.purple}33` : 'none',
+      }}
+    >
+      <span style={{ fontSize: '12px', fontWeight: 600, color: T.textPrimary }}>
+        ⚡ {label}
       </span>
-    </div>
+      <span style={{ fontSize: '10px', color: T.textMuted, lineHeight: 1.4 }}>
+        {description}
+      </span>
+    </button>
+  );
+};
 
-    {/* Node sections */}
-    {SECTIONS.map(({ label, nodes }) => (
-      <div key={label} role="group" aria-label={label}>
+// ── Sidebar ───────────────────────────────────────────────────
+export const PipelineToolbar = () => {
+  const loadTemplate = () => {
+    // Dispatch each node in the template with a slight position offset
+    // so they land in a readable left-to-right layout on the canvas.
+    LEAD_ENRICHER_TEMPLATE.forEach(({ type, x, y }) => {
+      window.dispatchEvent(
+        new CustomEvent('toolbar:addNode', { detail: { nodeType: type, x, y } })
+      );
+    });
+  };
+
+  return (
+    <nav
+      aria-label="Node palette"
+      style={{
+        width:         '200px',
+        minWidth:      '200px',
+        height:        '100%',
+        background:    T.bgSidebar,
+        borderRight:   `1px solid ${T.border}`,
+        display:       'flex',
+        flexDirection: 'column',
+        overflowY:     'auto',
+        fontFamily:    T.font,
+        flexShrink:    0,
+      }}
+    >
+      {/* Branding */}
+      <div style={{
+        padding:      '16px 14px 12px',
+        borderBottom: `1px solid ${T.border}`,
+        display:      'flex',
+        alignItems:   'center',
+        gap:          '8px',
+      }}>
+        <span aria-hidden="true" style={{ fontSize: '18px' }}>🔗</span>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: T.textPrimary, letterSpacing: '0.04em' }}>
+          Pipeline Builder
+        </span>
+      </div>
+
+      {/* Templates section */}
+      <div role="group" aria-label="Templates">
         <div style={{
           fontSize:      '10px',
           fontWeight:    600,
@@ -138,24 +190,48 @@ export const PipelineToolbar = () => (
           textTransform: 'uppercase',
           padding:       '14px 14px 6px',
         }}>
-          {label}
+          Templates
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '0 8px' }}>
-          {nodes.map(n => <NodeCard key={n.type} {...n} />)}
+        <div style={{ padding: '0 8px 4px' }}>
+          <TemplateButton
+            label="Lead Enricher"
+            description="Input → Prompt → LLM → Output"
+            onClick={loadTemplate}
+          />
         </div>
       </div>
-    ))}
 
-    {/* Hint */}
-    <div style={{
-      marginTop:  'auto',
-      padding:    '12px 14px',
-      fontSize:   '10px',
-      color:      T.textMuted,
-      borderTop:  `1px solid ${T.border}`,
-      lineHeight: 1.5,
-    }}>
-      Drag nodes onto the canvas to build your pipeline.
-    </div>
-  </nav>
-);
+      {/* Node sections */}
+      {SECTIONS.map(({ label, nodes }) => (
+        <div key={label} role="group" aria-label={label}>
+          <div style={{
+            fontSize:      '10px',
+            fontWeight:    600,
+            color:         T.textMuted,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            padding:       '14px 14px 6px',
+          }}>
+            {label}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '0 8px' }}>
+            {nodes.map(n => <NodeCard key={n.type} {...n} />)}
+          </div>
+        </div>
+      ))}
+
+      {/* Hint */}
+      <div style={{
+        marginTop:  'auto',
+        padding:    '12px 14px',
+        fontSize:   '10px',
+        color:      T.textMuted,
+        borderTop:  `1px solid ${T.border}`,
+        lineHeight: 1.5,
+      }}>
+        Drag nodes onto the canvas.<br />
+        <span style={{ color: T.borderBright }}>Ctrl+Z</span> to undo &nbsp;·&nbsp; <span style={{ color: T.borderBright }}>Ctrl+Y</span> to redo
+      </div>
+    </nav>
+  );
+};
